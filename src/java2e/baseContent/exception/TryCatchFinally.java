@@ -14,6 +14,7 @@ public class TryCatchFinally {
     int test1() {
         int a = 1;
         try{
+            // System.exit(1); 如果执行了此句，那么之后的代码就都不会执行了，包括 finally 内的代码
 //            a = 2/0;
             System.out.println("test1 try");
             a = 2;
