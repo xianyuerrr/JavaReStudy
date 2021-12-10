@@ -134,7 +134,37 @@ Integer 是 int 的包装类，有一个 int 类型的字段存储数据，而�
 三者都是集合框架中的 List，功能类似但表现有很大不同。
 
 - Vector
+**线程安全**的动态数组，如果不需要线程安全，不建议选择。扩容时会提高 1 倍。
 
 - ArrayList
+与 Vector 相似，本身不是线程安全的，性能会好很多。扩容时会提高 0.5 倍。
 
 - LinkedList
+双向链表，线程不安全，不需要调整容量。
+
+Vector 和 ArrayList 为动态数组，适合随机访问的场合。除了尾部插入和删除，往往性能会比较差。LinkedList 进行插入、删除要高效的多，
+但是随机访问性能较差。
+
+### HashTable、HashMap、TreeMap
+
+<img src="https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211210233744397.png" alt="image-20211210233744397" style="zoom: 67%;" />
+
+- HashTable 本身是同步的，不支持 null 键和值，由于开销较大，一般不推荐使用。
+- HashMap 与 HashTable 大体一致，但它是不同步的，而且支持 null 键和值。
+- TreeMap 基于红黑树，提供顺序访问，它的 get、put、remove 之类操作都是 O(log(n))的复杂度，具体顺序可以由指定的 Comparator 决定，或者根据键的自然顺序来判断。
+
+HashMap 在并发环境可能出现 无限循环占用 CPU、size 不准确等诡异问题。HashMap 的性能表现非常依赖于哈希码的有效性。
+
+
+
+Set 的几种实现:
+
+TreeSet 支持自然顺序访问，但是添加、删除、包含等操作要相对低效（log(n) 时间）。
+
+HashSet 则是利用哈希算法，理想情况下，如果哈希散列正常，可以提供常数时间的添加、删除、包含等操作，但是它不保证有序。
+
+LinkedHashSet，内部构建了一个记录插入顺序的双向链表，因此提供了按照插入顺序遍历的能力，与此同时，也保证了常数时间的添加、删除、
+包含等操作，这些操作性能略低于 HashSet，因为需要维护链表的开销。
+
+在遍历元素时，HashSet 性能受自身容量影响，所以初始化时，除非有必要，
+不然不要将其背后的 HashMap 容量设置过大。而对于 LinkedHashSet，由于其内部链表提供的方便，遍历性能只和元素多少有关系。
