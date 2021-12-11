@@ -168,3 +168,53 @@ LinkedHashSet，内部构建了一个记录插入顺序的双向链表，因此�
 
 在遍历元素时，HashSet 性能受自身容量影响，所以初始化时，除非有必要，
 不然不要将其背后的 HashMap 容量设置过大。而对于 LinkedHashSet，由于其内部链表提供的方便，遍历性能只和元素多少有关系。
+
+### 线程安全，ConcurrentHashMap
+
+Java 提供了不同层面的线程安全支持。除了 HashTable 等同步内容，还提供了所谓的**同步包装器**(Synchronized Wrapper)，但是他们的锁粒度非常粗，在高并发情况下，性能比较低下。更加普遍的选择是利用并发包提供的线程安全容器类：
+
+- 各种并发容器，比如 ConcurrentHashMap, CopyOnWriteArrayList
+- 各种线程安全队列(Queue, Deque)，如 ArrayBlockingQueue, SynchronousQueue
+- 各种有序容器的线程安全版本等
+
+具体实现方式包括从简单的 synchronize 方式，到更加精细化的，比如基于分离锁实现的 ConcurrentHashMap等并发实现等。
+
+早期 ConcurrentHashMap，其实现是基于：
+
+- 分离锁，也就是将内部进行分段（Segment），里面则是 HashEntry 的数组，和 HashMap类似，哈希相同的条目也是以链表形式存放
+- HashEntry 内部使用 volatile 的 value 字段来保证可见性，也利用了不可变对象的机制以改进利用 Unsafe 提供的底层能力，比如 volatile access，去直接完成部分操作，以最优化性能，毕竟 Unsafe 中的很多操作都是 JVM intrinsic 优化过的
+
+<img src="https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211211185744744.png" alt="image-20211211185744744" style="zoom: 80%;" />
+
+
+
+### IO
+
+区分同步或异步（ synchronous / asynchronous）。简单来说，同步是一种可靠的有序运行机制，当我们进行同步操作时，后续的任务是等待当前调用返回，才会进行下一步。而异步则相反，其他任务不需要等待当前调用返回，通常依靠事件、回调等机制来实现仼务间次序关系。
+
+区分阻塞与非阻塞（ blocking/non- blocking）。在进行阻塞操作时，当前线程会处于阻塞状态，无法从事其他任务，只有当条件就绪才能继续，比如 ServerSocket 新连接建立完毕，或数据读取、写入操作完成；而非阻塞则是不管 IO 操作是否结束，直接返回，相应操作在后台继续处理。
+
+IO 不仅仅是对文件的操作，网络编程中，比如 Socket通信，都是典型的 IO 操作目标。
+
+输入流、输出流（ InputStream / OutputStream）是用于读取或写入**字节**的，例如操作图片文件。而 Reader / Writer则是用于操作**字符**，增加了字符编解码等功能，适用于类似从文件中读取或者写入文本信息。本质上计算机操作的都是字节，不管是网络通信还是文件读取， Reader /  Writer 相当于构建了应用逻辑和原始数据之间的桥梁。
+
+![image-20211211192612692](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211211192612692.png)
+
+[NIO,美团技术团队](https://tech.meituan.com/2016/11/04/nio.html)
+
+
+
+### 文件拷贝
+
+- 基于输入输出流
+
+实际上是进行了多次上下文切换，比如应用读取数据时，先在内核态将数据从磁盘读取到内核缓存，再切换到用户态将数据从内核缓存读取到用户缓存。所以，这种方式会带来一定的额外开销，可能会降低 IO 效率。
+
+
+<img src="https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211211214746352.png" alt="image-20211211214746352" style="zoom:50%;" />
+
+- 基于 NIO transferTo
+
+会使用到零拷贝技术，数据传输并不需要用户态参与，省去了上下文切换的开销和不必要的内存拷贝，进而可能提高应用拷贝性能。注意， transferTo 不仅仅是可以用在文件拷贝中，与其类似的，例如读取磁盘文件，然后进行 Socket 发送，同样可以享受这种机制带来的性能和扩展性提高。
+
+<img src="C:/Users/30786/AppData/Roaming/Typora/typora-user-images/image-20211211215025155.png" alt="image-20211211215025155" style="zoom:50%;" />
