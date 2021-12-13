@@ -217,4 +217,23 @@ IO 不仅仅是对文件的操作，网络编程中，比如 Socket通信，都�
 
 会使用到零拷贝技术，数据传输并不需要用户态参与，省去了上下文切换的开销和不必要的内存拷贝，进而可能提高应用拷贝性能。注意， transferTo 不仅仅是可以用在文件拷贝中，与其类似的，例如读取磁盘文件，然后进行 Socket 发送，同样可以享受这种机制带来的性能和扩展性提高。
 
-<img src="C:/Users/30786/AppData/Roaming/Typora/typora-user-images/image-20211211215025155.png" alt="image-20211211215025155" style="zoom:50%;" />
+<img src="https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211211215025155.png" style="zoom:50%;" />
+
+
+### 接口和抽象类
+
+- 接口是对行为的抽象，它是抽象方法的集合，利用接口可以达到AP|定义和实现分离的目的。
+接口，不能实例化；不能包含任何非常量成员，任何feld都是隐含着 public static fina的意义；
+同时，没有非静态方法实现，也就是说要么是抽象方法，要么是静态方法。
+
+- Java标准类库中，定义了非常多的接口，比如 java.util.List抽象类是不能实例化的类，用 abstract关键字修饰cass，其目的主要是代码重用。
+除了不能实例化，形式上和一般的Java类并没有太大区别，可以有一个或者多个抽象方法，也可以没有抽象方法。抽象类大多用于抽取相关Java类
+的共用方法实现或者是共同成员变量，然后通过继承的方式达到代码复用的目的。Java标准库中，比如 collection框架，
+很多通用部分就被抽取成为抽象类，例如 java util. AbstractList.
+
+相比于其他面向对象语言，Java 在设计上有一些基本区别，比如 Java 不支持多继承。在规范代码的同时，也产生了一些局限性
+
+
+### 设计模式
+
+[设计模式](./src/gof/gof.md)
