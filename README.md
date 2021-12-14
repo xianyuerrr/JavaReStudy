@@ -327,3 +327,45 @@ jstack your_pid
 
 总体上可以理解为：
 区分线程状态 -> 查看等待目标 -> 对比 Monitor 等持有状态
+
+
+### Java 并发包工具类
+
+java.util.concurrent 及其子包：
+
+1. 比 synchronized 更加高级的各种同步结构，包括 CountDownLatch、CyclicBarrier、Semaphore 等，可以实现更加丰富的多线程操作，
+比如利用 Semaphore 作为资源控制器，限制同时进行工作的线程数量。
+
+2. 各种线程安全的容器，比如最常见的 ConcurrentHashMap、有序的 ConcunrrentSkipListMap，或者通过类似快照机制，
+实现线程安全的动态数组 CopyOnWriteArrayList 等。
+
+3. 各种并发队列实现，如各种 BlockedQueue 实现，比较典型的 ArrayBlockingQueue、SynchorousQueue
+或针对特定场景的 PriorityBlockingQueue 等。
+
+4. 强大的 Executor 框架，可以创建各种不同类型的线程池，调度任务运行等，绝大部分情况下，不再需要自己从头实现线程池和任务调度器。
+
+- CountDownLatch, 允许一个或多个线程等待某些操作完成。
+- CyclicBarrier, 一种辅助性的同步结构，允许多个线程等待到达某个屏障。
+- Semaphore, Java 版本的信号量实现。
+
+
+### ConcurrentLinkedQueue 和 LinkedBlockingQueue
+
+严格来讲，类似 ConcurrentLinkedQueue 这种 “Concurrent” 容器，才真正代表并发。
+
+区别：
+- Concurrent 类型基于 lock-free，在常见的多线程访问场景，一般可以提供较高吞吐量。
+- LinkedBlockingQueue 基于锁，并提供了 BlockingQueue 的等待性方法。
+
+java.util.concurrent 包提供的容器（Queue、List、Set、Map），从命名上可以大概区分为 Concurrent、CopyOnWrite 和 Blocking 三类，
+同样是线程安全容器，可以简单认为：
+- Concurrent 类型没有 CopyOnWrite 类容器相对较重的修改开销。但是，Concurrent 往往提供了较低的遍历一致性。
+
+弱一致性，可以理解为，当利用迭代器遍历时，即便容器发生修改，迭代器仍然可以继续进行遍历。
+弱一致性的另外一个体现是，size 等操作准确性是有限的，未必是100%准确。与此同时，读取的性能具有一定的不确定性。
+
+与弱一致性对应的，就是我介绍过的同步容器常见的行为 “fail-fast"，也就是如果检测到容器在遍历过程中发生了修改，
+则抛出 ConcurrentModificationException，不再继续遍历。
+
+![image-20211214235207018](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211214235207018.png)
+
