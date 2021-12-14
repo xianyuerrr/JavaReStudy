@@ -292,3 +292,38 @@ JVM 提供了三种不同的 Monitor 实现，也就是三种不同的锁：偏�
 ![image-20211214171903307](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211214171903307.png)
 
 
+### 一个线程两次调用 start() 方法
+
+从操作系统的角度看，线程是系统调度的最小单元，一个进程可以包含多个线程，作为任务的真正运作者，
+有自己的栈（Stack）、寄存器（Register）、本地存储（Thread Local）等，但是会和进程内其他线程共享文件描述符、虚拟地址空间等。
+
+在具体实现中，线程还分为内核线程、用户线程，Java 的线程实现与虚拟机相关。对于我们最熟悉的 Sun/OracleJDK，
+其线程也经历了一个演进过程，基本上在 Java 1.2之后，JDK 已经抛弃了所谓的 Green Thread，也就是用户调度的线程，
+现在的模型是 **一对一映射到操作系统内核线程**。
+
+Java 的线程是不允许启动两次的，第二次调用必然会抛出 IllegalThreadStateException，这是一种运行时异常，多次调用 start 被认为是编程错误。
+
+[Java 线程](./src/juc/juc.md)
+
+在第二次调用 start() 方法时，线程可能处于终止或者其他（非 NEW 状态），但是不论如何，都是不能再次启动的。
+
+![image-20211214190654990](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211214190654990.png)
+
+### 死锁的产生、定位、修复
+
+![dl](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211214195224437.png)
+
+- 首先，可以使用 jps 或者系统的 ps 命令、任务管理器等工具，确定进程 ID。
+
+- 其次，调用 jstack 获取线程栈
+```shell
+jstack your_pid
+```
+
+- 分析得到的输出，如图：
+![image-20211214195559631](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211214195559631.png)
+
+- 最后结合代码分析线程栈信息
+
+总体上可以理解为：
+区分线程状态 -> 查看等待目标 -> 对比 Monitor 等持有状态
