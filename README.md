@@ -369,3 +369,88 @@ java.util.concurrent 包提供的容器（Queue、List、Set、Map），从命�
 
 ![image-20211214235207018](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211214235207018.png)
 
+
+### 线程池
+
+Executors 目前提供了 5 种不同的线程池创建配置：
+- newCachedThreadPool()，它是一种用来处理**大量短时间工作任务**的线程池。
+具有几个鲜明特点：它会试图缓存线程并重用，当无缓存线程可用时，就会创建新的工作线程；
+如果线程闲置的时间超过60秒，则被终止并移出缓存；长时间闲置时，这种线程池，不会消耗什么资源。其内部使用 SynchronousQueue 作为工作队列。
+
+- newFixedThreadPool(int nThreads)，重用指定数目 (nThreads) 的线程，其背后使用的是无界的工作队列，
+任何时候最多有 nThreads 个工作线程是活动的。这意味着，如果任务数量超过了活动队列数目，将在工作队列中等待空闲线程出现；
+如果有工作线程退出，将会有新的工作线程被创建，以补足指定的数目 nThreads。
+
+- newSingleThreadExecutor()，它的特点在于工作线程数目被限制为 1，操作一个无界的工作队列，所以它保证了所有任务的都是被**顺序执行**，
+最多会有一个任务处于活动状态，并且不允许使用者改动线程池实例，因此可以避免其改变线程数目。
+
+- newSingleThreadScheduledExecutor() 和 newScheduledThreadPool(int corePoolSize)，创建的是个 ScheduledExecutorService，
+可以进行**定时或周期性的工作调度**，区别在于单一工作线程还是多个工作线程。
+
+- newWorkStealingPool(int parallelism)，这是一个经常被人忽略的线程池，Java 8 才加入这个创建方法，其内部会构建 ForkJoinPool，
+利用 Work-Stealing 算法，并行地处理任务，不保证处理顺序。
+
+线程池这个定义就是个容易让人误解的术语，因为 ExecutorService 除了通常意义上“池”的功能，还提供了更全面的**线程管理**、**任务提交**等方法。
+
+![image-20211215192855321](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211215192855321.png)
+
+![image-20211215193022863](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211215193022863.png)
+
+![image-20211215195104453](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211215195104453.png)
+
+
+### AtomicInteger
+
+AtomicIntger 是对 int 类型的一个封装，提供原子性的访问和更新操作，其原子性操作的实现是基于 CAS（compare-and-swap）技术。在大部分
+处理器上 CAS 都是一个非常轻量级的操作。
+
+CAS 也并不是没有副作用，试想，其常用的失败重试机制，隐含着一个假设，即竞争情况是短暂的。大多数应用场景中，
+确实大部分重试只会发生一次就获得了成功，但是总是有意外情况，所以在有需要的时候，还是要考虑限制自旋的次数，以免过度消耗 CPU。
+
+另外一个就是著名的 ABA 问题，这是通常只在 lock-free 算法下暴露的问题。我前面说过 CAS 是在更新时比较前值，如果对方只是恰好相同，
+例如期间发生了 A->B->A 的更新，仅仅判断数值是 A，可能导致不合理的修改操作。针对这种情况，Java 提供了 AtomicStampedReference 工具类，
+通过为引用建立类似版本号（stamp）的方式，来保证 CAS 的正确性。
+
+AbstractQueuedSynchronizer(AQS)内部数据和方法可以简单拆分为：
+- 一个 volatile 的整数成员表征状态，同时提供了 setState 和 getState 方法
+- 一个先入先出（FIFO）的等待线程队列，以实现多线程间竞争和等待，这是 AQS 机制的核心之一。
+- 各种基于 CAS 的基础操作方法，以及各种期望具体同步结构去实现的 acquire/release 方法。
+
+利用 AQS 实现一个同步结构，至少要实现两个基本类型的方法，分别是 acquire 操作，获取资源的独占权；还有就是 release 操作，释放对某个资源的独占。
+
+
+### 类加载过程，双亲委派模型
+
+一般来说，我们把 Java 的类加载过程分为三个主要步骤：加载、链接、初始化。
+
+首先是加载阶段（Loading），它是 Java 将字节码数据从不同的数据源读取到 JVM 中，并映射为JVM 认可的数据结构（Class对象），
+这里的数据源可能是各种各样的形态，如 jar 文件、class 文件，甚至是网络数据源等；如果输入数据不是 ClassFile 的结构，
+则会抛出 ClassFormatError。
+
+第二阶段是链接（Linking），这是核心的步骤，简单说是把原始的类定义信息平滑地转化入 JVM 运行的过程中。这里可进一步细分为三个步骤：
+
+- 验证（Verification），这是虚拟机安全的重要保障，JVM 需要核验字节信息是符合 Java 虚拟机规范，否则就被认为是 VerifyError，
+这样就防止了恶意信息或者不合规的信息危害 JVM 的运行，验证阶段有可能触发更多 class 的加载。
+
+- 准备（Preparation），创建类或接口中的静态变量，并初始化静态变量的初始值。但这里的“初始化”和下面的显式初始化阶段是有区别的，
+侧重点在于分配所需要的内存空间，不会去执行更进一步的 JVM 指令。
+
+- 解析（Resolution），在这一步会将常量池中的符号引用（symbolic reference）替换为直接引用。
+
+最后是初始化阶段（initialization），这一步真正去执行类初始化的代码逻辑，包括静态字段赋值的动作，
+以及执行类定义中的静态初始化块内的逻辑，编译器在编译阶段就会把这部分逻辑整理好，父类型的初始化逻辑优先于当前类型的逻辑。
+
+双亲委派模型，简单说就是当类加载器（Class-Loader）试图加载某个类型的时候，除非父加载器找不到相应类型，
+否则尽量将这个任务代理给当前加载器的父加载器去做。使用委派模型的目的是避免重复加载 Java 类型。
+
+![image-20211216234812598](https://cdn.jsdelivr.net/gh/xianyuerrr/PicGo/img/Roaming/Typora/typora-user-images/image-20211216234812598.png)
+
+通常类加载机制有三个基本特征：
+
+- 双亲委派模型。但不是所有类加载都遵守这个模型，有的时候，启动类加载器所加载的类型，是可能要加载用户代码的，
+比如 JDK 内部的 ServiceProvider/ServiceLoader 机制，用户可以在标准 API 框架上，提供自己的实现，JDK 也需要提供些默认的参考实现。
+例如，Java 中 JNDI、JDBC、文件系统、Cipher 等很多方面，都是利用的这种机制，这种情况就不会用双亲委派模型去加载，而是利用所谓的上下文加载器。
+
+- 可见性，子类加载器可以访问父加载器加载的类型，但是反过来是不允许的，不然，因为缺少必要的隔离，我们就没有办法利用类加载器去实现容器的逻辑。
+- 单一性，由于父加载器的类型对于子加载器是可见的，所以父加载器中加载过的类型，就不会在子加载器中重复加载。
+但是注意，类加载器“邻居”间，同一类型仍然可以被加载。
